@@ -76,7 +76,7 @@ export const updateProductById = async (req: Request, res: Response) => {
         Category,
       },
     });
-    res.status(200).json({ message: "Project updated sucellfully" });
+    res.status(200).json({ message: "Project updated sucellfully", product });
   } catch (error) {
     res.status(500).json({ message: "Product Server Error", error });
   }

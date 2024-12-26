@@ -2,60 +2,113 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 const prisma = new PrismaClient();
 
-export const addToCart = async (req: Request, res: Response) => {
+export const addToCart = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { productId, userId } = req.body;
-    if (!productId || !userId) {
-      res.status(400).json({ message: "productId and userId are required" });
+    const { userId, productId, quantity = 1 } = req.body;
+
+    if (!userId) {
+      res.status(401).json("invalid UserID");
+      return;
+    }
+    if (!productId) {
+      res.status(400).json("Provide Cart Product");
+      return;
+    }
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+    const cartExist = await prisma.cart.findFirst({
+      where: { userId },
+    });
+    let cartId = cartExist?.id;
+    if (!cartExist) {
+      const newCart = await prisma.cart.create({
+        data: { userId },
+      });
+      cartId = newCart.id;
     }
 
-    const cartExist = await prisma.cart.findFirst({ where: { id: userId } });
-    if (cartExist) {
-      const cartProduct = await prisma.cartProduct.findFirst({
+    if (!cartId) {
+      res.status(500).json({ message: "Failed to create/find cart" });
+      return;
+    }
+    const productExist = await prisma.cartProduct.findFirst({
+      where: { productId, cartId },
+    });
+    if (productExist) {
+      const quantityIncrese = await prisma.cartProduct.update({
         where: {
-          AND: [{ cartId: cartExist.id }, { productId: productId }],
+          cartId_productId: {
+            cartId,
+            productId,
+          },
         },
-      });
-
-      const cartItem = await prisma.cartProduct.create({
         data: {
-          cartId: cartExist?.id,
-          productId,
+          quantity: productExist.quantity + (quantity || 1),
         },
       });
-      res.status(201).json({ cartItem });
-    } else {
-      const cart = await prisma.cart.create({
-        data: {
-          userId: userId,
-        },
-      });
-      const cartId = cart?.id;
-      const cartItem = await prisma.cartProduct.create({
-        data: {
-          cartId,
-          productId,
-        },
-      });
-      res.status(201).json({ cartItem });
+      res.status(200).json({ data: quantityIncrese });
+      return;
     }
+    console.log("control reaches here!!!");
+    const cartProduct = await prisma.cartProduct.create({
+      data: {
+        cartId,
+        productId,
+        quantity: quantity || 1,
+      },
+    });
+
+    res.status(201).json({ cartProduct });
+    return;
   } catch (error) {
-    res.status(500).json({ error });
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+    return;
   }
 };
 
-export const getCartByUserId = async (req: Request, res: Response) => {
+export const getCartByUserId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { userId } = req.params;
     if (!userId) {
-      res.status(400).json({ message: "userId not found" });
+      res.status(401).json("Invalid UserID");
+      return;
     }
-    const cart = await prisma.cart.findFirst({ where: { userId } });
+    const cart = await prisma.cart.findFirst({
+      where: { userId },
+      include : {
+        cartProducts: {
+          include: {
+            product: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name :true,
+            email: true,
+          },
+        }
+      }
+    });
     if (!cart) {
-      res.status(400).json({ message: "cart not found" });
+      res.status(404).json({ message: "Cart Not found for this User" });
+      return;
     }
-    res.status(200).json(cart);
+    res.status(200).json({ message: "Success", cart });
+    return;
   } catch (error) {
-    res.status(500).json({ error });
+    console.error(error);
+    res.status(500).json("Internal Server Error");
+    return;
   }
 };

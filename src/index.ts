@@ -1,7 +1,7 @@
 import express from "express";
 import userRouter from "./routes/user.route";
 import productRouter from "./routes/products.route";
-import cartRouter from './routes/cart.route'
+import cartRouter from "./routes/cart.route";
 import cookieParser from "cookie-parser";
 const app = express();
 
