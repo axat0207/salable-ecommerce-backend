@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const user_route_1 = __importDefault(require("./routes/user.route"));
 const products_route_1 = __importDefault(require("./routes/products.route"));
+const review_route_1 = __importDefault(require("./routes/review.route"));
 const cart_route_1 = __importDefault(require("./routes/cart.route"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const app = (0, express_1.default)();
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/user", user_route_1.default);
 app.use("/api/v1/products", products_route_1.default);
 app.use("/api/v1/cart", cart_route_1.default);
+app.use("/api/v1/review", review_route_1.default);
 app.listen(port, () => {
     console.log("App running on port : " + port);
 });

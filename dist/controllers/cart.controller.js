@@ -14,7 +14,7 @@ const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const addToCart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { userId, productId, quantity } = req.body;
+        const { userId, productId, quantity = 1 } = req.body;
         if (!userId) {
             res.status(401).json("invalid UserID");
             return;
@@ -89,6 +89,20 @@ const getCartByUserId = (req, res) => __awaiter(void 0, void 0, void 0, function
         }
         const cart = yield prisma.cart.findFirst({
             where: { userId },
+            include: {
+                cartProducts: {
+                    include: {
+                        product: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                }
+            }
         });
         if (!cart) {
             res.status(404).json({ message: "Cart Not found for this User" });

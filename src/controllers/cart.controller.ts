@@ -85,20 +85,19 @@ export const getCartByUserId = async (
     }
     const cart = await prisma.cart.findFirst({
       where: { userId },
-      include : {
+      include: {
         cartProducts: {
           include: {
-            product: true,
+            product: {
+              select: {
+                name: true,
+                description: true,
+                images: true,
+              },
+            },
           },
         },
-        user: {
-          select: {
-            id: true,
-            name :true,
-            email: true,
-          },
-        }
-      }
+      },
     });
     if (!cart) {
       res.status(404).json({ message: "Cart Not found for this User" });
